@@ -1,44 +1,75 @@
-# Recogonize Flowers with TensorFLow Lite Model Maker and Android Studio ML Model Binding
+# 基于TensorFlow Lite实现的Android花卉识别应用
 
-This folder contains the code for the TensorFlow Lite codelab:
+## 向应用中添加TensorFlow Lite
+![4 U3HW6SMF76I@BZ}_0RNIE](https://github.com/Jarrod030/AS_ML/assets/74969760/27d480c0-3523-4fd4-bbca-5f1947a0d10b)
 
-* [Recognize Flowers with TensorFlow on Android (Beta)](https://goo.gle/3dbCSbt)
+## 添加代码重新运行APP
 
-## Introduction
+定位“start”模块MainActivity.kt文件的TODO 1，添加初始化训练模型的代码
 
-This beta codelab introduces the latest tooling using TensorFlow Lite Model Maker and Android Studio 4.1 Beta 1 or above. In addition, it will require access to a physical Android device to test. If you prefer to use the stable version of this codelab, follow this codelab instead.
+```
+private class ImageAnalyzer(ctx: Context, private val listener: RecognitionListener) :
+        ImageAnalysis.Analyzer {
 
-In these codelabs, you will learn:
+  ...
+  // TODO 1: Add class variable TensorFlow Lite Model
+  private val flowerModel = FlowerModel.newInstance(ctx)
 
-*   How to train your own custom image classifier using [TensorFlow Lite Model Maker](https://www.tensorflow.org/lite/tutorials/model_maker_image_classification).
-*   How to use Android Studio to import the TensorFlow Lite model to integrate the custom model in an Android app using CameraX.
-*   How to use GPU on your phone to accelerate your model.
+  ...
+}
+```
 
+在CameraX的analyze方法内部，需要将摄像头的输入ImageProxy转化为Bitmap对象，并进一步转化为TensorImage 对象
 
-## Pre-requisites
+```
+override fun analyze(imageProxy: ImageProxy) {
+  ...
+  // TODO 2: Convert Image to Bitmap then to TensorImage
+  val tfImage = TensorImage.fromBitmap(toBitmap(imageProxy))
+  ...
+}
 
-[Android Studio 4.1 Beta 1 or above](http://developers.android.com/studio/preview)
+```
 
-## Getting Started
+按照属性score对识别结果按照概率从高到低排序
+列出最高k种可能的结果，k的结果由常量MAX_RESULT_DISPLAY定义
 
-Visit the Google codelabs site to follow along the guided steps.
+```
+override fun analyze(imageProxy: ImageProxy) {
+  ...
+  // TODO 3: Process the image using the trained model, sort and pick out the top results
+  val outputs = flowerModel.process(tfImage)
+      .probabilityAsCategoryList.apply {
+          sortByDescending { it.score } // Sort with highest confidence first
+      }.take(MAX_RESULT_DISPLAY) // take the top results
 
-## Support
+  ...
+}
+```
 
-- Stack Overflow: https://stackoverflow.com/questions/tagged/tensorflow-lite+android-studio
+将识别的结果加入数据对象Recognition 中，包含label和score两个元素。后续将用于RecyclerView的数据显示
 
-## License
+```
+override fun analyze(imageProxy: ImageProxy) {
+  ...
+  // TODO 4: Converting the top probability items into a list of recognitions
+  for (output in outputs) {
+      items.add(Recognition(output.label, output.score))
+  }
+  ...
+}
+```
 
- Copyright (C) 2020 The Android Open Source Project
- 
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
+将原先用于虚拟显示识别结果的代码注释掉或者删除
 
-http://www.apache.org/licenses/LICENSE-2.0
- 
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
+```
+// START - Placeholder code at the start of the codelab. Comment this block of code out.
+for (i in 0..MAX_RESULT_DISPLAY-1){
+    items.add(Recognition("Fake label $i", Random.nextFloat()))
+}
+// END - Placeholder code at the start of the codelab. Comment this block of code out.
+```
+
+##运行结果
+
+![XXN05RCGZ}6QHM5D1NCGX4W](https://github.com/Jarrod030/AS_ML/assets/74969760/36efe176-6aa6-458e-b399-ae12b3438b09)
